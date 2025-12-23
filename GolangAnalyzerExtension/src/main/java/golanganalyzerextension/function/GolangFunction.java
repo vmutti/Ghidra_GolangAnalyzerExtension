@@ -692,7 +692,7 @@ public class GolangFunction {
 				}
 			}
 
-			file_line_comment_map.put(key, new FileLine(func_addr, key, pc_offset-key, file_name, line_num));
+			file_line_comment_map.put(key, new FileLine(func_addr, key, pc_offset-key, file_name, line_num, go_bin.get_go_version()));
 		}
 		return true;
 	}

@@ -44,7 +44,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		}});
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		FileLine file_line=new FileLine(go_bin.get_address(addr_value), offset, 0, "", 0);
+		FileLine file_line=new FileLine(go_bin.get_address(addr_value), offset, 0, "", 0, "go1.20");
 
 		assertEquals(file_line.get_func_addr()+file_line.get_offset(), addr_value+offset);
 	}
@@ -62,14 +62,14 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(new HashMap<String, String>());
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
+		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num, "go1.20");
 
 		assertEquals(file_line.get_file_name(), file_name);
 	}
 
 	static Stream<Arguments> test_get_file_name_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("cpu/cpu.go", 1),
+				Arguments.of("internal/cpu/cpu.go", 1),
 				Arguments.of("runtime/runtime.go", 10)
 			);
 	}
@@ -80,14 +80,14 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(new HashMap<String, String>());
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
+		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num, "go1.20");
 
 		assertEquals(file_line.get_line_num(), line_num);
 	}
 
 	static Stream<Arguments> test_get_line_num_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("cpu/cpu.go", 1),
+				Arguments.of("internal/cpu/cpu.go", 1),
 				Arguments.of("runtime/runtime.go", 10)
 			);
 	}
@@ -98,14 +98,14 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(new HashMap<String, String>());
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num);
+		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num, "go1.20");
 
-		assertEquals(file_line.toString(), String.format("%s:%d", file_name, line_num));
+		assertEquals(file_line.toString(), String.format("{@url https://github.com/golang/go/blob/go1.20/src/%s#L%d}", file_name, line_num));
 	}
 
 	static Stream<Arguments> test_to_string_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("cpu/cpu.go", 1),
+				Arguments.of("internal/cpu/cpu.go", 1),
 				Arguments.of("runtime/runtime.go", 10)
 			);
 	}
@@ -115,7 +115,7 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 		initialize(new HashMap<String, String>());
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
-		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, "test.go", 4);
+		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, "test.go", 4, "go1.20");
 		ByteArrayOutputStream byte_out = new ByteArrayOutputStream();
 		ObjectOutputStream out = new ObjectOutputStream(byte_out);
 		out.writeObject(file_line);
