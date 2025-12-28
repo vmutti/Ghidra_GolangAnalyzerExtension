@@ -73,6 +73,157 @@ public class FileLine implements Serializable {
 			// Depends on ghidra's comment rules.
 			return String.format("{@url https://github.com/golang/go/blob/%s/src/%s#L%d}", go_version_str, token, line_num);
 		}
+
+		String url = to_likely_github_url_from_file_name(file_name, line_num);
+		if (url != null) {
+			return "{@url " + url + "}";
+		}
+
 		return String.format("%s:%d", file_name, line_num);
+	}
+
+	private static String to_likely_github_url_from_file_name(String target_name, long target_line) {
+		if (target_name == null) {
+			return null;
+		}
+
+		String p = target_name.replace('\\', '/');
+		int mod_idx = p.indexOf("pkg/mod/");
+		if (mod_idx >= 0) {
+			mod_idx += "pkg/mod/".length();
+		} else {
+			mod_idx = 0;
+		}
+
+		String[] segs = p.substring(mod_idx).split("/");
+		int at_idx = -1, at_pos = -1;
+		for (int i = 0; i < segs.length; i++) {
+			int pos = segs[i].indexOf('@');
+			if (pos >= 0) {
+				at_idx = i;
+				at_pos = pos;
+				break;
+			}
+		}
+		if (at_idx < 0) {
+			return null;
+		}
+
+		StringBuilder mod = new StringBuilder();
+		for (int i = 0; i < at_idx; i++) {
+			if (segs[i].isEmpty()) {
+				continue;
+			}
+			if (mod.length() > 0) {
+				mod.append('/');
+			}
+			mod.append(decode_bang(segs[i]));
+		}
+		String last_before_at = segs[at_idx].substring(0, at_pos);
+		String version_raw = segs[at_idx].substring(at_pos + 1);
+		if (last_before_at.isEmpty() || version_raw.isEmpty()) {
+			return null;
+		}
+		if (mod.length() > 0) {
+			mod.append('/');
+		}
+		mod.append(decode_bang(last_before_at));
+
+		String module_path = mod.toString();
+		String version = strip_incompatible(version_raw);
+		String ref = ref_from_version(version);
+
+		String owner, repo;
+		int base_segs;
+		if (module_path.startsWith("github.com/")) {
+			String[] mp = module_path.split("/");
+			if (mp.length < 3) return null;
+			owner = mp[1]; repo = mp[2]; base_segs = 3;
+		} else if (module_path.startsWith("golang.org/x/")) {
+			String[] mp = module_path.split("/");
+			if (mp.length < 3) return null;
+			owner = "golang"; repo = mp[2]; base_segs = 3;
+		} else {
+			return null;
+		}
+
+		String[] mp = module_path.split("/");
+		int subdir_start = base_segs;
+		int subdir_end = mp.length;
+		if (subdir_end > subdir_start && is_major_suffix(mp[subdir_end - 1])) {
+			subdir_end--;
+		}
+
+		StringBuilder path_in_repo = new StringBuilder();
+		for (int i = subdir_start; i < subdir_end; i++) {
+			if (mp[i].isEmpty()) {
+				continue;
+			}
+			if (path_in_repo.length() > 0) {
+				path_in_repo.append('/');
+			}
+			path_in_repo.append(mp[i]);
+		}
+		for (int k = at_idx + 1; k < segs.length; k++) {
+			if (segs[k].isEmpty()) {
+				continue;
+			}
+			if (path_in_repo.length() > 0) {
+				path_in_repo.append('/');
+			}
+			path_in_repo.append(segs[k]);
+		}
+		if (path_in_repo.length() == 0) {
+			return null;
+		}
+
+		return String.format("https://github.com/%s/%s/blob/%s/%s#L%d", owner, repo, ref, path_in_repo, target_line);
+	}
+
+	private static String decode_bang(String seg) {
+		StringBuilder sb = new StringBuilder(seg.length());
+		for (int i = 0; i < seg.length(); i++) {
+			char c = seg.charAt(i);
+			if (c == '!' && i + 1 < seg.length()) {
+				char n = seg.charAt(i + 1);
+				sb.append(n == '!' ? '!' : Character.toUpperCase(n));
+				i++;
+			} else {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
+	}
+
+	private static String strip_incompatible(String v) {
+		int idx = v.indexOf("+incompatible");
+		return idx >= 0 ? v.substring(0, idx) : v;
+	}
+
+	private static String ref_from_version(String v) {
+		int last_dash = v.lastIndexOf('-');
+		if (last_dash > 0 && last_dash + 1 < v.length()) {
+			String tail = v.substring(last_dash + 1);
+			if (tail.matches("[0-9a-f]{7,}")) {
+				return tail;
+			}
+		}
+		return v;
+	}
+
+	private static boolean is_major_suffix(String s) {
+		if (s == null || !s.startsWith("v") || s.length() < 2) {
+			return false;
+		}
+		for (int i = 1; i < s.length(); i++) {
+			if (!Character.isDigit(s.charAt(i))) {
+				return false;
+			}
+		}
+		try {
+			return Integer.parseInt(s.substring(1)) >= 2;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 }

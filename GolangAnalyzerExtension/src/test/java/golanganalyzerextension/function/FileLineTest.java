@@ -94,19 +94,25 @@ public class FileLineTest extends AbstractGhidraHeadlessIntegrationTest {
 
 	@ParameterizedTest
 	@MethodSource("test_to_string_params")
-	public void test_to_string(String file_name, int line_num) throws Exception {
+	public void test_to_string(String file_name, int line_num, String url) throws Exception {
 		initialize(new HashMap<String, String>());
 		GolangBinary go_bin=new GolangBinary(program, "", TaskMonitor.DUMMY);
 
 		FileLine file_line=new FileLine(go_bin.get_address(0x401000), 0, 0, file_name, line_num, "go1.20");
 
-		assertEquals(file_line.toString(), String.format("{@url https://github.com/golang/go/blob/go1.20/src/%s#L%d}", file_name, line_num));
+		assertEquals(file_line.toString(), String.format("{@url %s}", url));
 	}
 
 	static Stream<Arguments> test_to_string_params() throws Throwable {
 		return Stream.of(
-				Arguments.of("internal/cpu/cpu.go", 1),
-				Arguments.of("runtime/runtime.go", 10)
+				Arguments.of("internal/cpu/cpu.go", 1, "https://github.com/golang/go/blob/go1.20/src/internal/cpu/cpu.go#L1"),
+				Arguments.of("runtime/runtime.go", 10, "https://github.com/golang/go/blob/go1.20/src/runtime/runtime.go#L10"),
+				Arguments.of("github.com/tmp/pmt/v5@v5.3.0/batch.go", 1, "https://github.com/tmp/pmt/blob/v5.3.0/batch.go#L1"),
+				Arguments.of("github.com/tmp/tmp-client@v0.0.0-20200128182646-c69cb7680fd4/repo_hook.go", 1, "https://github.com/tmp/tmp-client/blob/c69cb7680fd4/repo_hook.go#L1"),
+				Arguments.of("github.com/tmp/tmp-module@v1.8.4/repo_tag.go", 1, "https://github.com/tmp/tmp-module/blob/v1.8.4/repo_tag.go#L1"),
+				Arguments.of("golang.org/x/tools@v0.9.3/go/ssa/create.go", 1, "https://github.com/golang/tools/blob/v0.9.3/go/ssa/create.go#L1"),
+				Arguments.of("/temp/pkg/mod/github.com/tmp/pmt/v5@v5.3.0/batch.go", 1, "https://github.com/tmp/pmt/blob/v5.3.0/batch.go#L1"),
+				Arguments.of("/temp/pkg/mod/golang.org/x/tools@v0.9.3/go/ssa/create.go", 1, "https://github.com/golang/tools/blob/v0.9.3/go/ssa/create.go#L1")
 			);
 	}
 
